@@ -206,7 +206,9 @@ function _M.check_credentials(service, params)
   local args = {
       app_id = params.client_id,
       app_key = params.client_secret,
-      redirect_uri = params.redirect_uri
+      redirect_uri = params.redirect_uri,
+     --random nonce value, this parameter is required by Red Hat SSO 
+      nonce = 12345
     }
 
   local res = backend:authorize(args)
@@ -238,8 +240,10 @@ function _M:authorize(service, client)
     _M.respond_with_error(401, 'invalid_client')
     return
   end
-
-  local url = resty_url.join(self.config.authorize_url, ngx.var.is_args, ngx.var.args)
+  -- due a rhsso issue I add nonce parameter in the url, the original code is comented above
+  -- local url = resty_url.join(self.config.authorize_url, ngx.var.is_args, ngx.var.args)
+  local url = resty_url.join(self.config.authorize_url, ngx.var.is_args, ngx.var.args,'&nonce=1234')
+   ngx.log(ngx.INFO, "url: " .. inspect(url))
   return ngx.redirect(url)
 end
 
@@ -260,6 +264,7 @@ function _M:get_token(service, client)
 
   params.client_id = creds.client_id
   params.client_secret = creds.client_secret
+  params.nonce = 12345
 
   ok, err = _M.token_check_params(params)
   if not ok then
